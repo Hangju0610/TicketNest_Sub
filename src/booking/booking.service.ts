@@ -4,6 +4,7 @@ import { BookingEntity } from 'src/database/entity/booking.entity';
 import { GoodsEntity } from 'src/database/entity/goods.entity';
 import { Repository } from 'typeorm';
 import { BookingDto } from './dto/booking.dto';
+import * as apm from 'elastic-apm-node';
 
 @Injectable()
 export class BookingService {
@@ -15,6 +16,7 @@ export class BookingService {
   ) {}
 
   async createBooking(booking: BookingDto) {
+    const bookingSpan = apm.startSpan('BookingSpan');
     await this.bookingRepository
       .createQueryBuilder()
       .insert()
@@ -24,5 +26,17 @@ export class BookingService {
         userId: booking.userId,
       })
       .execute();
+    bookingSpan.end();
+
+    const goodsSpan = apm.startSpan('GoodsSpan');
+    await this.goodsRepository
+      .createQueryBuilder()
+      .update(GoodsEntity)
+      .set({
+        bookingCount: () => 'bookingCount + 1',
+      })
+      .where('id = :id', { id: booking.goodsId })
+      .execute();
+    goodsSpan.end();
   }
 }

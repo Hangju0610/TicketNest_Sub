@@ -1,6 +1,9 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { config } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
+import { UserEntity } from './entity/user.entity';
+import { GoodsEntity } from './entity/goods.entity';
+import { BookingEntity } from './entity/booking.entity';
 
 config();
 
@@ -11,8 +14,8 @@ const dataSourceOptions: DataSourceOptions & TypeOrmModuleOptions = {
   username: process.env.DB_USER,
   password: String(process.env.DB_PASSWORD),
   database: process.env.DB_DATABASE,
-  logging: true,
-  entities: ['src/database/entity/*.entity{.ts,.js}'],
+  logging: false,
+  entities: [UserEntity, GoodsEntity, BookingEntity],
   migrations: ['src/database/migrations/*.ts'],
   migrationsTableName: 'migrations',
 };
