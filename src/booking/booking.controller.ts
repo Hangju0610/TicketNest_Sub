@@ -13,7 +13,7 @@ export class BookingController implements OnModuleInit {
     this.redis.subscribe('Ticket');
     this.redis.on('message', async (channel, message) => {
       const booking = JSON.parse(message);
-      // const createBooking = await this.bookingService.createBooking(booking);
+      const createBooking = await this.bookingService.createBooking(booking);
     });
   }
 }
