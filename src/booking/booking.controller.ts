@@ -8,4 +8,12 @@ export class BookingController implements OnModuleInit {
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly bookingService: BookingService,
   ) {}
+
+  onModuleInit() {
+    this.redis.subscribe('Ticket');
+    this.redis.on('message', async (channel, message) => {
+      const booking = JSON.parse(message);
+      // const createBooking = await this.bookingService.createBooking(booking);
+    });
+  }
 }
