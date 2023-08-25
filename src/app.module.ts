@@ -6,6 +6,8 @@ import { BookingModule } from './booking/booking.module';
 import { RedisModule } from './redis/redis.module';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { dataSourceOptions } from './database/data-source';
+import { ApmInterceptor } from './interceptor/apm.interceptor';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -17,6 +19,12 @@ import { dataSourceOptions } from './database/data-source';
     RedisModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ApmInterceptor,
+    },
+    AppService,
+  ],
 })
 export class AppModule {}
