@@ -19,9 +19,9 @@ export class BookingService {
     this.redisClient = redisClient;
   }
 
-  async createBooking(booking: BookingDto) {
+  async createBooking(booking) {
     const trans = apm.startTransaction('createBooking');
-    const cacheSpan = apm.startSpan('cacheSpan');
+    // const cacheSpan = apm.startSpan('cacheSpan');
     const cachedBookingCount = await this.redisClient.get(
       `goodsId:${booking.goodsId}`,
     );
@@ -39,8 +39,7 @@ export class BookingService {
           'GoodsEntity.bookingLimit',
           'GoodsEntity.bookingCount',
         ])
-        .from(GoodsEntity, 'GoodsEntity')
-        .where('id=:id', { id: booking.goodsId })
+        .where('id=:id', { id: Number(booking.goodsId) })
         .getOne();
 
       bookingCount = findGoods.bookingCount;
@@ -54,11 +53,11 @@ export class BookingService {
       bookingCount = +cachedBookingCount;
       bookingLimit = +cachedBookingLimit;
     }
-    cacheSpan.end();
+    // cacheSpan.end();
 
-    const compareSpan = apm.startSpan();
+    // const compareSpan = apm.startSpan();
     // 2. 예매 limit보다 많을 경우, Error 처리 진행
-    if (bookingCount >= bookingLimit) {
+    if (Number(cachedBookingCount) >= Number(cachedBookingLimit)) {
       //! throw 에러 처리를 하면 부하 테스트 단계에서 에러가 나서 일단 주석처리
       // throw new ConflictException({
       //   errorMessage: '남은 좌석이 없습니다.',
@@ -69,10 +68,10 @@ export class BookingService {
       );
       return { message: '예매가 초과되어 대기자 명단에 등록 되었습니다' };
     }
-    compareSpan.end();
+    // compareSpan.end();
 
     // 3. 예매 진행
-    const bookingSpan = apm.startSpan('BookingSpan');
+    // const bookingSpan = apm.startSpan('BookingSpan');
     await this.bookingRepository
       .createQueryBuilder()
       .insert()
@@ -82,8 +81,10 @@ export class BookingService {
         userId: booking.userId,
       })
       .execute();
-    bookingSpan.end();
+    // bookingSpan.end();
     await this.redisClient.incr(`goodsId:${booking.goodsId}`);
     trans.end();
+
+    return true;
   }
 }

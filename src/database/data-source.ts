@@ -15,6 +15,7 @@ const dataSourceOptions: DataSourceOptions & TypeOrmModuleOptions = {
   password: String(process.env.DB_PASSWORD),
   database: process.env.DB_DATABASE,
   logging: false,
+  keepConnectionAlive: true,
   entities: [UserEntity, GoodsEntity, BookingEntity],
   migrations: ['src/database/migrations/*.ts'],
   migrationsTableName: 'migrations',
