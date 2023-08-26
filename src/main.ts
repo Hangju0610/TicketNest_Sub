@@ -8,10 +8,10 @@ async function bootstrap() {
   const configService: ConfigService = app.get(ConfigService);
 
   apm.start({
-    serviceName: 'Sub_Test',
+    serviceName: 'Consumer_Server',
     serverUrl: configService.get<string>('APM_SERVER_URL'),
   });
 
-  await app.listen(3000);
+  await app.listen(8080);
 }
 bootstrap();
