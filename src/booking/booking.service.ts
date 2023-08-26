@@ -56,12 +56,8 @@ export class BookingService {
     // cacheSpan.end();
 
     // const compareSpan = apm.startSpan();
-    // 2. 예매 limit보다 많을 경우, Error 처리 진행
+    // 2. 좌석이 없는 경우 대기자 명단으로 등록
     if (Number(cachedBookingCount) >= Number(cachedBookingLimit)) {
-      //! throw 에러 처리를 하면 부하 테스트 단계에서 에러가 나서 일단 주석처리
-      // throw new ConflictException({
-      //   errorMessage: '남은 좌석이 없습니다.',
-      // });
       await this.redisClient.lpush(
         `waitlist:${booking.goodsId}`,
         booking.userId,

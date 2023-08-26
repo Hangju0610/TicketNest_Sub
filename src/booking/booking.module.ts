@@ -13,6 +13,7 @@ import { BullModule } from '@nestjs/bull';
     BullModule.registerQueue({ name: 'Ticket' }),
     TypeOrmModule.forFeature([BookingEntity, GoodsEntity]),
   ],
+  // controllers: [BookingController],
   providers: [BookingService, BookingProcessor],
 })
 export class BookingModule {}
