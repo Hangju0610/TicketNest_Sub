@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { BookingProcessor } from './booking.controller';
+import { BookingProcessor } from './booking.processor';
 import { BookingService } from './booking.service';
 import { RedisModule } from 'src/redis/redis.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -14,6 +14,6 @@ import { BullModule } from '@nestjs/bull';
     TypeOrmModule.forFeature([BookingEntity, GoodsEntity]),
   ],
   // controllers: [BookingController],
-  providers: [BookingService, BookingProcessor],
+  providers: [BookingService, BookingProcessor], // processor는 provider로 주입해야 한다.
 })
 export class BookingModule {}
