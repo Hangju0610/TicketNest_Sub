@@ -21,53 +21,56 @@ export class BookingService {
 
   async createBooking(booking) {
     const trans = apm.startTransaction('createBooking');
-    // const cacheSpan = apm.startSpan('cacheSpan');
-    const cachedBookingCount = await this.redisClient.get(
-      `goodsId:${booking.goodsId}`,
-    );
+    // 캐시된 LimitData 획득
+    // test 하기 전 cachedBookingLimit를 Redis에 Set 부탁드립니다.
     const cachedBookingLimit = await this.redisClient.get(
       `bookingLimitOfGoodsId:${booking.goodsId}`,
     );
 
-    let bookingCount: number;
-    let bookingLimit: number;
-    if (!cachedBookingCount || !cachedBookingLimit) {
-      const findGoods = await this.goodsRepository
-        .createQueryBuilder()
-        .select([
-          'GoodsEntity.id',
-          'GoodsEntity.bookingLimit',
-          'GoodsEntity.bookingCount',
-        ])
-        .where('id=:id', { id: Number(booking.goodsId) })
-        .getOne();
+    // 이 Logic을 제외시킨 이유
+    // 처음 cachedBookingLimit이 없는 경우
+    // cachedBookingLimit이 0으로 된 상태, -> Waitlist로직으로 이동
+    // 일관성 오류 발생 (첫번째로 예매한 녀석이 대기열로 간다??)
+    // 캐시된 데이터가 없는 경우
+    // let bookingLimit: number;
+    // if (!cachedBookingLimit) {
+    //   const findGoods = await this.goodsRepository
+    //     .createQueryBuilder()
+    //     .select(['GoodsEntity.id', 'GoodsEntity.bookingLimit'])
+    //     .where('id=:id', { id: Number(booking.goodsId) })
+    //     .getOne();
 
-      bookingCount = findGoods.bookingCount;
-      bookingLimit = findGoods.bookingLimit;
-      await this.redisClient.set(
-        `bookingLimitOfGoodsId:${findGoods.id}`,
-        bookingLimit,
-      );
-    } else {
-      // 레디스에서 가져온 데이터 타입은 스트링이므로 숫자로 변환
-      bookingCount = +cachedBookingCount;
-      bookingLimit = +cachedBookingLimit;
-    }
-    // cacheSpan.end();
+    //   bookingLimit = findGoods.bookingLimit;
+    //   await this.redisClient.set(
+    //     `bookingLimitOfGoodsId:${findGoods.id}`,
+    //     bookingLimit,
+    //   );
+    // } else {
+    //   // 레디스에서 가져온 데이터 타입은 스트링이므로 숫자로 변환
+    //   bookingLimit = +cachedBookingLimit;
+    // }
 
-    // const compareSpan = apm.startSpan();
+    // Redis Transaction 진행
+    // count +1 증가
+    const count = await this.redisClient
+      .multi()
+      .incr(`goodsId:${booking.goodsId}`)
+      .exec();
+    // count는 [error: Error , result: unknown]으로 구성되어있다.
+    // result가 Counting 된 값으로, 이것을 통해 비교
+
     // 2. 좌석이 없는 경우 대기자 명단으로 등록
-    if (Number(cachedBookingCount) >= Number(cachedBookingLimit)) {
+    if (+count[0][1] > +cachedBookingLimit) {
       await this.redisClient.lpush(
         `waitlist:${booking.goodsId}`,
         booking.userId,
       );
-      return { message: '예매가 초과되어 대기자 명단에 등록 되었습니다' };
+      return {
+        message: `예매가 초과되어 대기자 명단에 등록 되었습니다. Count: ${count[0][1]}`,
+      };
     }
-    // compareSpan.end();
 
     // 3. 예매 진행
-    // const bookingSpan = apm.startSpan('BookingSpan');
     await this.bookingRepository
       .createQueryBuilder()
       .insert()
@@ -77,10 +80,9 @@ export class BookingService {
         userId: booking.userId,
       })
       .execute();
-    // bookingSpan.end();
-    await this.redisClient.incr(`goodsId:${booking.goodsId}`);
+
     trans.end();
 
-    return true;
+    return { message: `${count[0][1]}번 예매 완료` };
   }
 }
