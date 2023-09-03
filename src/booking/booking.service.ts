@@ -65,6 +65,8 @@ export class BookingService {
         `waitlist:${booking.goodsId}`,
         booking.userId,
       );
+
+      trans.end();
       return {
         message: `예매가 초과되어 대기자 명단에 등록 되었습니다. Count: ${count[0][1]}`,
       };
